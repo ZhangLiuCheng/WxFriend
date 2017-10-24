@@ -16,7 +16,7 @@ public class GroupFriend extends UiAutomatorTestCase {
 	
 	private UiDevice mDevice;
 	private int groupCount = -1;
-	private int index;
+	private int index = 1;
 	
 	protected void setUp() throws Exception {
 		super.setUp();
@@ -50,7 +50,7 @@ public class GroupFriend extends UiAutomatorTestCase {
 		if (groupCount == -1) {
 			groupCount = listObj.getChildCount();
 		}
-		if (index > (groupCount - 1)) {
+		if (index > (groupCount - 3)) {
 			return;
 		}
 		UiObject obj = listObj.getChildByInstance(new UiSelector().resourceId("com.tencent.mm:id/a5k"), index);
@@ -85,7 +85,17 @@ public class GroupFriend extends UiAutomatorTestCase {
 					// 点查看全部
 					UiObject allObj = new UiObject(new UiSelector().text("查看全部群成员"));
 					allObj.clickAndWaitForNewWindow();
-					addFriends();
+					
+					
+					// 滚动到顶部
+					UiScrollable gridObj = new UiScrollable(new UiSelector().resourceId("com.tencent.mm:id/cns"));
+			        Point srcP = new Point(mDevice.getDisplayWidth() / 2, 
+			        		mDevice.getDisplayHeight() - 20);
+			        Point destP = new Point(mDevice.getDisplayWidth() / 2,
+			        		gridObj.getBounds().top + 20);
+			        mDevice.swipe(new Point[]{destP, srcP}, 100);
+			        
+					addFriendsMore();
 					toBack();
 					toBack();
 					toBack();
@@ -118,59 +128,108 @@ public class GroupFriend extends UiAutomatorTestCase {
         }
 	}
 	
-	// 添加好友
+	// 添加好友(没有查看更多)
 	private void addFriends() throws UiObjectNotFoundException {
 		UiScrollable listObj = new UiScrollable(new UiSelector().resourceId("android:id/list"));
 		UiObject obj = null;
 		UiObject childObj = null;
         for (int i= 0; i < listObj.getChildCount(); i++) {
-        	obj = listObj.getChildByInstance(new UiSelector().resourceId("android:id/list"), i);
+        	obj = listObj.getChildByInstance(new UiSelector().resourceId("com.tencent.mm:id/byn"), i);
         	if (obj.exists()) {
         		for (int j = 0; j < obj.getChildCount(); j++) {
-//        			childObj = obj.getChild()
+        			childObj = obj.getChild(new UiSelector().className("android.widget.RelativeLayout").index(j));
+        			System.out.println("childObj  "  + childObj.getBounds());
+        			childObj.clickAndWaitForNewWindow();
+        			realAddFriend();
+        			System.out.println("33333");
 				}
+        	} else {
+        		break;
         	}
         }
 	}
-	
-    // 获取通讯好友的list
-	private void fetchAccount() throws UiObjectNotFoundException {
-		UiScrollable listObj = new UiScrollable(new UiSelector().resourceId("com.tencent.mm:id/i9"));
+
+	int count = 0;
+	// 添加好友(点击查看更多)
+	private void addFriendsMore() throws UiObjectNotFoundException {
+		UiScrollable listObj = new UiScrollable(new UiSelector().resourceId("com.tencent.mm:id/cns"));
+		System.out.println("============>   " + listObj.getChildCount());
 		UiObject obj = null;
         for (int i= 0; i < listObj.getChildCount(); i++) {
-        	obj = listObj.getChildByInstance(new UiSelector().resourceId("com.tencent.mm:id/ir"), i);
+        	System.out.println("aaaaaaa  " + i);
+
+        	obj = listObj.getChildByInstance(new UiSelector().resourceId("com.tencent.mm:id/acz"), i);
         	if (obj.exists()) {
-            	obj.clickAndWaitForNewWindow();
-            	String account = getAccount();
-            	System.out.println(account);
-            	toBack();
+        		
+        		UiObject obj1 = listObj.getChildByInstance(new UiSelector().resourceId("com.tencent.mm:id/ad1"), i);
+        		if (obj1.exists()) {
+        			System.out.println(obj.getBounds()+ "  ----   " + obj1.getText());
+        		}
+        		count++;
+
+//            	obj.clickAndWaitForNewWindow();
+//    			realAddFriend();
+        	} else {
+        		System.out.println("count  " + count);
+        		return;
         	}
+        	System.out.println("bbbb " + i);
         }
+        
+        System.out.println("111111");
         // 滚动到下一页
-        UiObject toolBarObj = new UiObject(new UiSelector().resourceId("com.tencent.mm:id/by2"));
         Point srcP = new Point(mDevice.getDisplayWidth() / 2, 
-        		mDevice.getDisplayHeight() - toolBarObj.getBounds().height() - listObj.getBounds().top - 20);
+        		mDevice.getDisplayHeight() - 20);
         Point destP = new Point(mDevice.getDisplayWidth() / 2,
         		listObj.getBounds().top);
         mDevice.swipe(new Point[]{srcP, destP}, 100);
 
-        sleep(2000);
+        System.out.println("22222222");
+        sleep(3000);
         
-        fetchAccount();
+        System.out.println("3333333");
+        addFriendsMore();
 	}
 	
-	private String getAccount() {
-        UiObject nameObj = new UiObject(new UiSelector().resourceId("com.tencent.mm:id/nj"));
-        UiObject acObj = new UiObject(new UiSelector().resourceId("com.tencent.mm:id/ahw"));
-        
-        if (acObj.exists()) {
-        	try {
-				return nameObj.getText().trim() + ":" + acObj.getText().split(":")[1].trim();
-			} catch (UiObjectNotFoundException e) {
-				e.printStackTrace();
-			}
+	private void realAddFriend() throws UiObjectNotFoundException {
+		// 点击添加到通讯录
+        UiObject makeFriendObj = new UiObject(new UiSelector().text("添加到通讯录"));
+        if (!makeFriendObj.exists()) {
+        	toBack();
+        	return;
         }
-		return null;
+        makeFriendObj.clickAndWaitForNewWindow();
+        
+        // 不需要验证直接添加成功
+        UiObject makeFriendObjAgain = new UiObject(new UiSelector().text("添加到通讯录"));
+        if (makeFriendObjAgain.exists()) {
+        	toBack();
+        	return;
+        }
+        
+        // 永无无法通过群来添加好友
+        UiObject infoObj = new UiObject(new UiSelector().resourceId("com.tencent.mm:id/jf"));
+        if (infoObj.exists()) {
+            UiObject confirmObj = new UiObject(new UiSelector().text("确定"));
+            confirmObj.clickAndWaitForNewWindow();
+            toBack();
+            return;
+        }
+        
+        // 点击发送按钮
+        UiObject sendObj = new UiObject(new UiSelector().text("发送"));
+        sendObj.clickAndWaitForNewWindow();
+        System.out.println("11111");
+        try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+        UiObject makeFriendObjAgain1 = new UiObject(new UiSelector().text("添加到通讯录"));
+        if (makeFriendObjAgain1.exists()) {
+        	toBack();
+        }
+        System.out.println("2222");
 	}
 	
 	private boolean toBack() {
